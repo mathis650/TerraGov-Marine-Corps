@@ -5,6 +5,9 @@
 #define HIDE_ON_GROUND 1
 #define HIDE_ON_SHIP 2
 
+#define SPOTLIGHT_COOLDOWN_DURATION 6 MINUTES
+#define SPOTLIGHT_DURATION 2 MINUTES
+
 GLOBAL_LIST_EMPTY(active_orbital_beacons)
 GLOBAL_LIST_EMPTY(active_laser_targets)
 GLOBAL_LIST_EMPTY(active_cas_targets)
@@ -82,6 +85,11 @@ GLOBAL_LIST_EMPTY(active_cas_targets)
 /obj/machinery/computer/camera_advanced/overwatch/delta
 	name = "Delta Overwatch Console"
 
+/obj/machinery/computer/camera_advanced/overwatch/req
+	icon_state = "overwatch_req"
+	name = "Requisition Overwatch Console"
+	desc = "Big Brother Requisition demands to see money flowing into the void that is greed."
+
 /obj/machinery/computer/camera_advanced/overwatch/rebel
 	faction = FACTION_TERRAGOV_REBEL
 	req_access = list(ACCESS_MARINE_BRIDGE_REBEL)
@@ -118,11 +126,13 @@ GLOBAL_LIST_EMPTY(active_cas_targets)
 	. = ..()
 	RegisterSignal(user, COMSIG_MOB_CLICK_SHIFT, .proc/send_order)
 	RegisterSignal(user, COMSIG_ORDER_SELECTED, .proc/set_order)
+	RegisterSignal(user, COMSIG_MOB_MIDDLE_CLICK, .proc/attempt_spotlight)
 
 /obj/machinery/computer/camera_advanced/overwatch/remove_eye_control(mob/living/user)
 	. = ..()
 	UnregisterSignal(user, COMSIG_MOB_CLICK_SHIFT)
 	UnregisterSignal(user, COMSIG_ORDER_SELECTED)
+	UnregisterSignal(user, COMSIG_MOB_MIDDLE_CLICK)
 
 /obj/machinery/computer/camera_advanced/overwatch/can_interact(mob/user)
 	. = ..()
@@ -322,7 +332,7 @@ GLOBAL_LIST_EMPTY(active_cas_targets)
 			var/input = stripped_input(usr, "What will be the squad's primary objective?", "Primary Objective")
 			if(input)
 				current_squad.primary_objective = input + " ([worldtime2text()])"
-				current_squad.message_squad("Your primary objective has changed. See Status pane for details.")
+				current_squad.message_squad("Your primary objective has changed. See Game panel for details.")
 				if(issilicon(usr))
 					to_chat(usr, span_boldnotice("Primary objective of squad '[current_squad]' set."))
 				visible_message(span_boldnotice("Primary objective of squad '[current_squad]' set."))
@@ -330,7 +340,7 @@ GLOBAL_LIST_EMPTY(active_cas_targets)
 			var/input = stripped_input(usr, "What will be the squad's secondary objective?", "Secondary Objective")
 			if(input)
 				current_squad.secondary_objective = input + " ([worldtime2text()])"
-				current_squad.message_squad("Your secondary objective has changed. See Status pane for details.")
+				current_squad.message_squad("Your secondary objective has changed. See Game panel for details.")
 				if(issilicon(usr))
 					to_chat(usr, span_boldnotice("Secondary objective of squad '[current_squad]' set."))
 				visible_message(span_boldnotice("Secondary objective of squad '[current_squad]' set."))
@@ -462,6 +472,39 @@ GLOBAL_LIST_EMPTY(active_cas_targets)
 	popup.open()
 
 
+/obj/machinery/computer/camera_advanced/overwatch/req/interact(mob/living/user)
+	. = ..()
+	if(.)
+		return
+
+	var/dat
+	if(!operator)
+		dat += "<B>Main Operator:</b> <A href='?src=\ref[src];operation=change_main_operator'>----------</A><BR>"
+	else
+		dat += "<B>Main Operator:</b> <A href='?src=\ref[src];operation=change_main_operator'>[operator.name]</A><BR>"
+		dat += "   <A href='?src=\ref[src];operation=logout_main'>{Stop Overwatch}</A><BR>"
+		dat += "----------------------<br>"
+		switch(state)
+			if(OW_MAIN)
+				for(var/datum/squad/S AS in watchable_squads)
+					dat += "<b>[S.name] Squad</b> <a href='?src=\ref[src];operation=message;current_squad=\ref[S]'>\[Message Squad\]</a><br>"
+					if(S.squad_leader)
+						dat += "<b>Leader:</b> <a href='?src=\ref[src];operation=use_cam;cam_target=\ref[S.squad_leader]'>[S.squad_leader.name]</a> "
+						dat += "<a href='?src=\ref[src];operation=sl_message;current_squad=\ref[S]'>\[MSG\]</a><br>"
+					else
+						dat += "<b>Leader:</b> <font color=red>NONE</font><br>"
+					if(S.overwatch_officer)
+						dat += "<b>Squad Overwatch:</b> [S.overwatch_officer.name]<br>"
+					else
+						dat += "<b>Squad Overwatch:</b> <font color=red>NONE</font><br>"
+					dat += "<A href='?src=\ref[src];operation=monitor[S.id]'>[S.name] Squad Monitor</a><br>"
+			if(OW_MONITOR)//Info screen.
+				dat += get_squad_info()
+
+	var/datum/browser/popup = new(user, "overwatch", "<div align='center'>Requisition Overwatch Console</div>", 550, 550)
+	popup.set_content(dat)
+	popup.open()
+
 /obj/machinery/computer/camera_advanced/overwatch/proc/send_to_squads(txt)
 	for(var/datum/squad/squad AS in watchable_squads)
 		squad.message_squad(txt)
@@ -489,7 +532,7 @@ GLOBAL_LIST_EMPTY(active_cas_targets)
 	busy = TRUE //All set, let's do this.
 	var/warhead_type = GLOB.marine_main_ship.orbital_cannon.tray.warhead.name	//For the AI and Admin logs.
 
-	for(var/mob/living/silicon/ai/AI in GLOB.silicon_mobs)
+	for(var/mob/living/silicon/ai/AI AS in GLOB.ai_list)
 		to_chat(AI, span_warning("NOTICE - Orbital bombardment triggered from overwatch consoles. Warhead type: [warhead_type]. Target: [AREACOORD_NO_Z(T)]"))
 		playsound(AI,'sound/machines/triple_beep.ogg', 25, 1, 20)
 
@@ -658,6 +701,53 @@ GLOBAL_LIST_EMPTY(active_cas_targets)
 	visible_message(span_boldnotice("[transfer_marine] has been transfered from squad '[old_squad]' to squad '[new_squad]'. Logging to enlistment file."))
 	to_chat(transfer_marine, "[icon2html(src, transfer_marine)] <font size='3' color='blue'><B>\[Overwatch\]:</b> You've been transfered to [new_squad]!</font>")
 
+///This is an orbital light. Basically, huge thing which the CIC can use to light up areas for a bit of time.
+/obj/machinery/computer/camera_advanced/overwatch/proc/attempt_spotlight(datum/source, atom/A, params)
+	SIGNAL_HANDLER
+
+	if(!powered())
+		return 0
+
+	var/area/here_we_are = get_area(src)
+	var/obj/machinery/power/apc/myAPC = here_we_are.get_apc()
+
+	var/power_amount = myAPC?.terminal?.powernet?.avail
+
+	if(power_amount >= 10000)
+		return
+
+	if(TIMER_COOLDOWN_CHECK(src, COOLDOWN_ORBITAL_SPOTLIGHT))
+		to_chat(source, span_notice("The Orbital spotlight is still recharging."))
+		return
+	var/area/place = get_area(A)
+	if(istype(place) && place.ceiling >= CEILING_UNDERGROUND)
+		to_chat(source, span_warning("You cannot illuminate this place. It is probably underground."))
+		return
+	var/turf/target = get_turf(A)
+	if(!target)
+		return
+	new /obj/effect/overwatch_light(target)
+	use_power(10000)	//Huge light needs big power. Still less than autodocs.
+	TIMER_COOLDOWN_START(src, COOLDOWN_ORBITAL_SPOTLIGHT, SPOTLIGHT_COOLDOWN_DURATION)
+	to_chat(source, span_notice("Orbital spotlight activated. Duration : [SPOTLIGHT_DURATION]"))
+
+//This is an effect to be sure it is properly deleted and it does not interfer with existing lights too much.
+/obj/effect/overwatch_light
+	name = "overwatch beam of light"
+	desc = "You are not supposed to see this. Please report it."
+	icon_state = "" //No sprite
+	invisibility = INVISIBILITY_MAXIMUM
+	resistance_flags = RESIST_ALL
+	light_system = STATIC_LIGHT
+	light_color = COLOR_TESLA_BLUE
+	light_power = 11	//This is a HUGE light.
+
+/obj/effect/overwatch_light/Initialize()
+	. = ..()
+	set_light(light_power)
+	playsound(src,'sound/mecha/heavylightswitch.ogg', 25, 1, 20)
+	visible_message(span_warning("You see a twinkle in the sky before your surroundings are hit with a beam of light!"))
+	QDEL_IN(src, SPOTLIGHT_DURATION)
 
 //This is perhaps one of the weirdest places imaginable to put it, but it's a leadership skill, so
 
@@ -672,16 +762,20 @@ GLOBAL_LIST_EMPTY(active_cas_targets)
 		to_chat(src, span_warning("You cannot give an order in your current state."))
 		return
 
+	if(IsMute())
+		to_chat(src, span_warning("You cannot give an order while muted."))
+		return
+
 	if(command_aura_cooldown > 0)
 		to_chat(src, span_warning("You have recently given an order. Calm down."))
 		return
 
 	if(!which)
-		var/choice = input(src, "Choose an order") in command_aura_allowed + "help" + "cancel"
+		var/choice = tgui_input_list(src, "Choose an order", items = command_aura_allowed + "help")
 		if(choice == "help")
 			to_chat(src, span_notice("<br>Orders give a buff to nearby soldiers for a short period of time, followed by a cooldown, as follows:<br><B>Move</B> - Increased mobility and chance to dodge projectiles.<br><B>Hold</B> - Increased resistance to pain and combat wounds.<br><B>Focus</B> - Increased gun accuracy and effective range.<br>"))
 			return
-		if(choice == "cancel")
+		if(!choice)
 			return
 		command_aura = choice
 	else
@@ -693,8 +787,8 @@ GLOBAL_LIST_EMPTY(active_cas_targets)
 
 	if(!(command_aura in command_aura_allowed))
 		return
-	command_aura_cooldown = 45 //45 ticks
-	command_aura_tick = 10 //10 ticks
+	command_aura_cooldown = 45 //40 ticks, or 90 seconds overall CD, 60 practical.
+	command_aura_tick = 15//15 ticks, or 30 seconds apprx.
 	var/message = ""
 	switch(command_aura)
 		if("move")
@@ -757,9 +851,6 @@ GLOBAL_LIST_EMPTY(active_cas_targets)
 	skill_name = "leadership"
 	skill_min = SKILL_LEAD_TRAINED
 	var/orders_visible = TRUE
-
-/datum/action/skill/toggle_orders/New()
-	return ..(/obj/item/megaphone)
 
 /datum/action/skill/toggle_orders/action_activate()
 	var/mob/living/carbon/human/H = owner

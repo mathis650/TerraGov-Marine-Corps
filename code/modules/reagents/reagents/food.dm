@@ -11,7 +11,6 @@
 	var/nutriment_factor = 1
 	var/adj_temp = 0
 	var/targ_temp = BODYTEMP_NORMAL
-	taste_description = "generic food"
 
 /datum/reagent/consumable/on_mob_life(mob/living/L, metabolism)
 	current_cycle++
@@ -28,7 +27,6 @@
 	description = "All the vitamins, minerals, and carbohydrates the body needs in pure form."
 	nutriment_factor = 15
 	color = "#664330" // rgb: 102, 67, 48
-
 	var/brute_heal = 1
 	var/burn_heal = 0
 	var/blood_gain = 0.4
@@ -47,6 +45,7 @@
 	// taste data can sometimes be ("salt" = 3, "chips" = 1)
 	// and we want it to be in the form ("salt" = 0.75, "chips" = 0.25)
 	// which is called "normalizing"
+
 	if(!supplied_data)
 		supplied_data = data
 
@@ -76,6 +75,7 @@
 	counterlist_normalise(taste_amounts)
 
 	data = taste_amounts
+
 
 /datum/reagent/consumable/sugar
 	name = "Sugar"
@@ -152,7 +152,7 @@
 	agony_start = 3
 	agony_amount = 4
 
-/datum/reagent/consumable/capsaicin/condensed/reaction_mob(mob/living/L, method = TOUCH, volume, metabolism, show_message = TRUE, touch_protection = 0)
+/datum/reagent/consumable/capsaicin/condensed/reaction_mob(mob/living/L, method = TOUCH, volume, show_message = TRUE, touch_protection = 0)
 	. = ..()
 	if(!(method in list(TOUCH, VAPOR)) || !ishuman(L))
 		return

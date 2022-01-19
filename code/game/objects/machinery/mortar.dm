@@ -155,7 +155,7 @@
 
 		var/turf/selfown = locate((coords["targ_x"] + coords["dial_x"]), (coords["targ_y"] + coords["dial_y"]), z)
 		if(get_dist(loc, selfown) < 7)
-			to_chat(usr, span_warning("You cannot target this coordinate, it is too close to your mortar."))
+			to_chat(user, span_warning("You cannot target this coordinate, it is too close to your mortar."))
 			return
 
 		var/turf/T = locate(coords["targ_x"] + coords["dial_x"] + offset_x, coords["targ_y"]  + coords["dial_x"] + offset_y, z)
@@ -233,7 +233,7 @@
 //The portable mortar item
 /obj/item/mortar_kit
 	name = "\improper M402 mortar"
-	desc = "A manual, crew-operated mortar system intended to rain down 80mm goodness on anything it's aimed at. Needs to be set down first to fire. Use 'Unique Action' to deploy."
+	desc = "A manual, crew-operated mortar system intended to rain down 80mm goodness on anything it's aimed at. Needs to be set down first to fire. Use Ctrl-Click to deploy."
 	icon = 'icons/Marine/mortar.dmi'
 	icon_state = "mortar"
 
@@ -248,7 +248,7 @@
 	AddElement(/datum/element/deployable_item, /obj/machinery/deployable/mortar, 5 SECONDS)
 
 /obj/item/mortar_kit/attack_self(mob/user)
-	unique_action(user)
+	do_unique_action(user)
 
 /obj/item/mortar_kit/unique_action(mob/user)
 	var/area/current_area = get_area(src)

@@ -96,7 +96,7 @@
 
 //medical hud used by ghosts
 /datum/atom_hud/medical/observer
-	hud_icons = list(HEALTH_HUD, XENO_EMBRYO_HUD, XENO_REAGENT_HUD, STATUS_HUD, MACHINE_HEALTH_HUD, SENTRY_AMMO_HUD)
+	hud_icons = list(HEALTH_HUD, XENO_EMBRYO_HUD, XENO_REAGENT_HUD, STATUS_HUD, MACHINE_HEALTH_HUD, MACHINE_AMMO_HUD)
 
 
 /datum/atom_hud/medical/pain
@@ -183,12 +183,17 @@
 	var/image/infection_hud = hud_list[XENO_EMBRYO_HUD] //State of the xeno embryo.
 	var/image/simple_status_hud = hud_list[STATUS_HUD_SIMPLE] //Status for the naked eye.
 	var/image/xeno_reagent = hud_list[XENO_REAGENT_HUD] // Displays active xeno reagents
+	var/image/xeno_debuff = hud_list[XENO_DEBUFF_HUD] //Displays active xeno specific debuffs
 	var/static/image/neurotox_image = image('icons/mob/hud.dmi', icon_state = "neurotoxin")
 	var/static/image/hemodile_image = image('icons/mob/hud.dmi', icon_state = "hemodile")
 	var/static/image/transvitox_image = image('icons/mob/hud.dmi', icon_state = "transvitox")
+	var/static/image/sanguinal_image = image('icons/mob/hud.dmi', icon_state = "sanguinal")
+	var/static/image/ozelomelyn_image = image('icons/mob/hud.dmi', icon_state = "ozelomelyn")
 	var/static/image/neurotox_high_image = image('icons/mob/hud.dmi', icon_state = "neurotoxin_high")
 	var/static/image/hemodile_high_image = image('icons/mob/hud.dmi', icon_state = "hemodile_high")
 	var/static/image/transvitox_high_image = image('icons/mob/hud.dmi', icon_state = "transvitox_high")
+	var/static/image/hunter_silence_image = image('icons/mob/hud.dmi', icon_state = "silence_debuff")
+	var/static/image/sanguinal_high_image = image('icons/mob/hud.dmi', icon_state = "sanguinal_high")
 
 	xeno_reagent.overlays.Cut()
 	xeno_reagent.icon_state = ""
@@ -196,11 +201,16 @@
 		var/neurotox_amount = reagents.get_reagent_amount(/datum/reagent/toxin/xeno_neurotoxin) + reagents.get_reagent_amount(/datum/reagent/toxin/xeno_neurotoxin/light)
 		var/hemodile_amount = reagents.get_reagent_amount(/datum/reagent/toxin/xeno_hemodile)
 		var/transvitox_amount = reagents.get_reagent_amount(/datum/reagent/toxin/xeno_transvitox)
+		var/sanguinal_amount = reagents.get_reagent_amount(/datum/reagent/toxin/xeno_sanguinal)
+		var/ozelomelyn_amount = reagents.get_reagent_amount(/datum/reagent/toxin/xeno_ozelomelyn)
 
 		if(neurotox_amount > 10) //Blinking image for particularly high concentrations
 			xeno_reagent.overlays += neurotox_high_image
 		else if(neurotox_amount > 0)
 			xeno_reagent.overlays += neurotox_image
+
+		if(ozelomelyn_amount > 0) // Has no effect beyond having it in them, don't need to have a high image.
+			xeno_reagent.overlays += ozelomelyn_image
 
 		if(hemodile_amount > 10)
 			xeno_reagent.overlays += hemodile_high_image
@@ -212,12 +222,32 @@
 		else if(transvitox_amount > 0)
 			xeno_reagent.overlays += transvitox_image
 
+		if(sanguinal_amount > 10)
+			xeno_reagent.overlays += sanguinal_high_image
+		else if(sanguinal_amount > 0)
+			xeno_reagent.overlays += sanguinal_image
+
 	hud_list[XENO_REAGENT_HUD] = xeno_reagent
+
+	//Xeno debuff section start
+	xeno_debuff.overlays.Cut()
+	xeno_debuff.icon_state = ""
+	if(stat != DEAD)
+		if(IsMute())
+			xeno_debuff.overlays += hunter_silence_image
+
+	hud_list[XENO_DEBUFF_HUD] = xeno_debuff
 
 	if(species.species_flags & IS_SYNTHETIC)
 		simple_status_hud.icon_state = ""
 		status_hud.icon_state = "hudsynth"
 		infection_hud.icon_state = "hudsynth" //Xenos can feel synths are not human.
+		return TRUE
+
+	if(species.species_flags & HEALTH_HUD_ALWAYS_DEAD)
+		status_hud.icon_state = "huddead"
+		infection_hud.icon_state = ""
+		simple_status_hud.icon_state = ""
 		return TRUE
 
 	if(status_flags & XENO_HOST)
@@ -238,6 +268,7 @@
 			if(!HAS_TRAIT(src, TRAIT_PSY_DRAINED))
 				infection_hud.icon_state = "psy_drain"
 			if(HAS_TRAIT(src, TRAIT_UNDEFIBBABLE ))
+				hud_list[HEART_STATUS_HUD].icon_state = "still_heart"
 				status_hud.icon_state = "huddead"
 				return TRUE
 			if(!client)
@@ -291,7 +322,7 @@
 
 #define HEALTH_RATIO_PAIN_HUD 1
 #define PAIN_RATIO_PAIN_HUD 0.25
-#define STAMINA_RATIO_PAIN_HUD 0.5
+#define STAMINA_RATIO_PAIN_HUD 0.25
 
 
 /mob/proc/med_pain_set_perceived_health()
@@ -299,7 +330,7 @@
 
 
 /mob/living/carbon/human/med_pain_set_perceived_health()
-	if(species && species.species_flags & NO_PAIN)
+	if(species?.species_flags & IS_SYNTHETIC)
 		return FALSE
 
 	var/image/holder = hud_list[PAIN_HUD]
@@ -338,9 +369,16 @@
 /datum/atom_hud/xeno_tactical
 	hud_icons = list(XENO_TACTICAL_HUD)
 
+///hud component for revealing xeno specific status effect debuffs to xenos
+/datum/atom_hud/xeno_debuff
+	hud_icons = list(XENO_DEBUFF_HUD)
+
 //Xeno status hud, for xenos
 /datum/atom_hud/xeno
 	hud_icons = list(HEALTH_HUD_XENO, PLASMA_HUD, PHEROMONE_HUD, QUEEN_OVERWATCH_HUD, ARMOR_SUNDER_HUD)
+
+/datum/atom_hud/xeno_heart
+	hud_icons = list(HEART_STATUS_HUD)
 
 /mob/living/proc/hud_set_sunder()
 	return
@@ -450,10 +488,10 @@
 
 
 /datum/atom_hud/squad
-	hud_icons = list(SQUAD_HUD_TERRAGOV, MACHINE_HEALTH_HUD, SENTRY_AMMO_HUD)
+	hud_icons = list(SQUAD_HUD_TERRAGOV, MACHINE_HEALTH_HUD, MACHINE_AMMO_HUD)
 
 /datum/atom_hud/squad_rebel
-	hud_icons = list(SQUAD_HUD_REBEL, MACHINE_HEALTH_HUD, SENTRY_AMMO_HUD)
+	hud_icons = list(SQUAD_HUD_REBEL, MACHINE_HEALTH_HUD, MACHINE_AMMO_HUD)
 
 
 /mob/proc/hud_set_job(faction = FACTION_TERRAGOV)
@@ -518,7 +556,7 @@
 	hud_list[ORDER_HUD] = holder
 
 ///Makes sentry health visible
-/obj/machinery/proc/hud_set_machine_health()
+/obj/proc/hud_set_machine_health()
 	var/image/holder = hud_list[MACHINE_HEALTH_HUD]
 
 	if(!holder)
@@ -535,13 +573,27 @@
 
 ///Makes mounted guns ammo visible
 /obj/machinery/deployable/mounted/proc/hud_set_gun_ammo()
-	var/image/holder = hud_list[SENTRY_AMMO_HUD]
+	var/image/holder = hud_list[MACHINE_AMMO_HUD]
 
 	if(!holder)
 		return
 	var/obj/item/weapon/gun/gun = internal_item
-	if(!gun.current_mag)
+	if(!gun.rounds)
 		holder.icon_state = "plasma0"
 		return
-	var/amount = round(gun.current_mag.current_rounds * 100 / gun.current_mag.max_rounds, 10)
+	var/amount = gun.max_rounds ? round(gun.rounds * 100 / gun.max_rounds, 10) : 0
+	holder.icon_state = "plasma[amount]"
+
+///Makes unmanned vehicle ammo visible
+/obj/vehicle/unmanned/proc/hud_set_uav_ammo()
+	var/image/holder = hud_list[MACHINE_AMMO_HUD]
+
+	if(!holder)
+		return
+
+	if(!current_rounds)
+		holder.icon_state = "plasma0"
+		return
+
+	var/amount = round(current_rounds * 100 / max_rounds, 10)
 	holder.icon_state = "plasma[amount]"

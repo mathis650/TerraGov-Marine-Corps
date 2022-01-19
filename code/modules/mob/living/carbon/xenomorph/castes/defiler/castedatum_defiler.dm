@@ -2,6 +2,7 @@
 	caste_name = "Defiler"
 	display_name = "Defiler"
 	upgrade_name = ""
+	primordial_upgrade_name = PRIMORDIAL_DEFILER
 	caste_desc = "A frightening looking, bulky xeno that drips with suspect green fluids."
 
 	caste_type_path = /mob/living/carbon/xenomorph/Defiler
@@ -33,16 +34,14 @@
 
 	can_hold_eggs = CAN_HOLD_ONE_HAND
 	// *** Defense *** //
-	soft_armor = list("melee" = 30, "bullet" = 25, "laser" = 15, "energy" = 30, "bomb" = XENO_BOMB_RESIST_0, "bio" = 30, "rad" = 30, "fire" = 25, "acid" = 30)
+	soft_armor = list("melee" = 30, "bullet" = 30, "laser" = 30, "energy" = 30, "bomb" = XENO_BOMB_RESIST_0, "bio" = 30, "rad" = 30, "fire" = 25, "acid" = 30)
 
 	actions = list(
 		/datum/action/xeno_action/xeno_resting,
 		/datum/action/xeno_action/activable/psydrain,
-		/datum/action/xeno_action/activable/headbite,
-		/datum/action/xeno_action/activable/devour,
 		/datum/action/xeno_action/activable/cocoon,
-		/datum/action/xeno_action/plant_weeds,
-		/datum/action/xeno_action/activable/larval_growth_sting/defiler,
+		/datum/action/xeno_action/activable/plant_weeds,
+		/datum/action/xeno_action/activable/defile,
 		/datum/action/xeno_action/lay_egg,
 		/datum/action/xeno_action/activable/inject_egg_neurogas,
 		/datum/action/xeno_action/emit_neurogas,
@@ -55,6 +54,7 @@
 		/datum/reagent/toxin/xeno_hemodile,
 		/datum/reagent/toxin/xeno_transvitox,
 		/datum/reagent/toxin/xeno_neurotoxin,
+		/datum/reagent/toxin/xeno_ozelomelyn,
 	)
 
 	// *** Pheromones *** //
@@ -86,7 +86,7 @@
 	upgrade_threshold = 750
 
 	// *** Defense *** //
-	soft_armor = list("melee" = 35, "bullet" = 30, "laser" = 30, "energy" = 30, "bomb" = XENO_BOMB_RESIST_0, "bio" = 35, "rad" = 35, "fire" = 30, "acid" = 35)
+	soft_armor = list("melee" = 35, "bullet" = 35, "laser" = 35, "energy" = 30, "bomb" = XENO_BOMB_RESIST_0, "bio" = 35, "rad" = 35, "fire" = 30, "acid" = 35)
 
 	// *** Pheromones *** //
 	aura_strength = 2 //Defilers aura begins at 1.7 and ends at 2.6. It's .1 better than a carrier at ancient.
@@ -114,7 +114,7 @@
 	upgrade_threshold = 1750
 
 	// *** Defense *** //
-	soft_armor = list("melee" = 38, "bullet" = 35, "laser" = 35, "energy" = 35, "bomb" = XENO_BOMB_RESIST_0, "bio" = 38, "rad" = 38, "fire" = 35, "acid" = 38)
+	soft_armor = list("melee" = 40, "bullet" = 40, "laser" = 40, "energy" = 35, "bomb" = XENO_BOMB_RESIST_0, "bio" = 38, "rad" = 38, "fire" = 35, "acid" = 38)
 
 		// *** Pheromones *** //
 	aura_strength = 2.1 //Defilers aura begins at 1.7 and ends at 2.6. It's .1 better than a carrier at ancient.
@@ -142,8 +142,51 @@
 	upgrade_threshold = 2750
 
 	// *** Defense *** //
-	soft_armor = list("melee" = 40, "bullet" = 40, "laser" = 40, "energy" = 40, "bomb" = XENO_BOMB_RESIST_0, "bio" = 40, "rad" = 40, "fire" = 40, "acid" = 40)
+	soft_armor = list("melee" = 45, "bullet" = 45, "laser" = 45, "energy" = 40, "bomb" = XENO_BOMB_RESIST_0, "bio" = 40, "rad" = 40, "fire" = 40, "acid" = 40)
 
 	// *** Pheromones *** //
 	aura_strength = 2.6 //Defilers aura begins at 1.7 and ends at 2.6. It's .1 better than a carrier at ancient.
 
+
+/datum/xeno_caste/defiler/primordial
+	upgrade_name = "Primordial"
+	caste_desc = "An unspeakable hulking horror dripping and exuding the most vile of substances."
+	primordial_message = "Death follows everywhere we go. We are the plague."
+	upgrade = XENO_UPGRADE_FOUR
+
+	// *** Melee Attacks *** //
+	melee_damage = 26
+
+	// *** Speed *** //
+	speed = -1
+
+	// *** Plasma *** //
+	plasma_max = 575
+	plasma_gain = 35
+
+	// *** Health *** //
+	max_health = 375
+
+	// *** Evolution *** //
+	upgrade_threshold = 2850
+
+	// *** Defense *** //
+	soft_armor = list("melee" = 45, "bullet" = 45, "laser" = 45, "energy" = 40, "bomb" = XENO_BOMB_RESIST_0, "bio" = 40, "rad" = 40, "fire" = 40, "acid" = 40)
+
+	// *** Pheromones *** //
+	aura_strength = 2.6 //Defilers aura begins at 1.7 and ends at 2.6. It's .1 better than a carrier at ancient.
+
+	actions = list(
+		/datum/action/xeno_action/xeno_resting,
+		/datum/action/xeno_action/activable/psydrain,
+		/datum/action/xeno_action/activable/cocoon,
+		/datum/action/xeno_action/activable/plant_weeds,
+		/datum/action/xeno_action/activable/defile,
+		/datum/action/xeno_action/lay_egg,
+		/datum/action/xeno_action/activable/inject_egg_neurogas,
+		/datum/action/xeno_action/emit_neurogas,
+		/datum/action/xeno_action/select_reagent,
+		/datum/action/xeno_action/reagent_slash,
+		/datum/action/xeno_action/toggle_pheromones,
+		/datum/action/xeno_action/activable/tentacle,
+	)

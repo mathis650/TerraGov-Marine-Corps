@@ -26,7 +26,7 @@
 
 /obj/structure/ladder/LateInitialize()
 	. = ..()
-	for(var/obj/structure/ladder/L in GLOB.ladder_list)
+	for(var/obj/structure/ladder/L AS in GLOB.ladder_list)
 		if(L.id == id)
 			if(L.height == (height - 1))
 				down = L
@@ -110,9 +110,6 @@
 	visible_message(span_notice("[user] climbs [ladder_dir_name] [src].")) //Hack to give a visible message to the people here without duplicating user message
 	user.visible_message(span_notice("[user] climbs [ladder_dir_name] [src]."),
 	span_notice("You climb [ladder_dir_name] [src]."))
-
-/obj/structure/ladder/attack_paw(mob/living/carbon/human/user)
-	return attack_hand(user)
 
 
 /obj/structure/ladder/attack_ghost(mob/dead/observer/user)

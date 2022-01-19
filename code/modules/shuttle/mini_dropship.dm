@@ -1,11 +1,11 @@
 /obj/docking_port/stationary/marine_dropship/minidropship
 	name = "Minidropship hangar pad"
-	id = "minidropship"
+	id = SHUTTLE_TADPOLE
 	roundstart_template = /datum/map_template/shuttle/minidropship
 
 /obj/docking_port/mobile/marine_dropship/minidropship
 	name = "Tadpole"
-	id = "minidropship"
+	id = SHUTTLE_TADPOLE
 	dwidth = 0
 	dheight = 0
 	width = 7
@@ -18,9 +18,9 @@
 	icon_state = "shuttlecomputer"
 	req_one_access = list(ACCESS_MARINE_DROPSHIP, ACCESS_MARINE_LEADER)
 	density = FALSE
-	interaction_flags = INTERACT_MACHINE_TGUI
+	interaction_flags = INTERACT_OBJ_UI
 	resistance_flags = RESIST_ALL
-	shuttleId = "minidropship"
+	shuttleId = SHUTTLE_TADPOLE
 	lock_override = CAMERA_LOCK_GROUND
 	shuttlePortId = "minidropship_custom"
 	view_range = "26x26"
@@ -39,7 +39,7 @@
 	/// If the next destination is a transit
 	var/to_transit = TRUE
 	/// The id of the stationary docking port on the ship
-	var/origin_port_id = "minidropship"
+	var/origin_port_id = SHUTTLE_TADPOLE
 	/// The user of the ui
 	var/mob/living/ui_user
 	/// If this computer was damaged by a xeno
@@ -147,7 +147,6 @@
 		to_chat(ui_user, span_warning("Can not toggle night vision mode in caves"))
 		return
 	nvg_vision_mode = !nvg_vision_mode
-	eyeobj.update_remote_sight(ui_user)
 
 /obj/machinery/computer/camera_advanced/shuttle_docker/minidropship/attack_alien(mob/living/carbon/xenomorph/X, damage_amount, damage_type, damage_flag, effects, armor_penetration, isrightclick)
 	. = ..()
@@ -184,6 +183,12 @@
 	if(next_fly_state == SHUTTLE_IN_ATMOSPHERE)
 		shuttle_port.set_idle() // don't go up with a broken console, cencel spooling
 		visible_message("Autopilot detects loss of helm control. Halting take off!")
+
+/obj/machinery/computer/camera_advanced/shuttle_docker/minidropship/can_interact(mob/user)
+	if(damaged)
+		to_chat(user, span_warning("The [src] blinks and lets out a crackling noise. Its broken!"))
+		return
+	return ..()
 
 /obj/machinery/computer/camera_advanced/shuttle_docker/minidropship/ui_state(mob/user)
 	return GLOB.dropship_state

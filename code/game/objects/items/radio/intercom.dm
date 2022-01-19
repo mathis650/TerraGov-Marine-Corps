@@ -26,6 +26,7 @@
 		if(WEST)
 			pixel_x += 32
 	START_PROCESSING(SSobj, src)
+	become_hearing_sensitive()
 
 
 /obj/item/radio/intercom/Destroy()
@@ -36,9 +37,6 @@
 /obj/item/radio/intercom/attack_ai(mob/user as mob)
 	spawn (0)
 		attack_self(user)
-
-/obj/item/radio/intercom/attack_paw(mob/living/carbon/human/user)
-	return src.attack_hand(user)
 
 
 /obj/item/radio/intercom/attack_hand(mob/living/user)

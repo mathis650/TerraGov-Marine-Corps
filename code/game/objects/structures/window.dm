@@ -7,7 +7,7 @@
 	density = TRUE
 	anchored = TRUE
 	layer = WINDOW_LAYER
-	flags_atom = ON_BORDER
+	flags_atom = ON_BORDER|DIRLOCK
 	resistance_flags = XENO_DAMAGEABLE | DROPSHIP_IMMUNE
 	coverage = 20
 	var/dismantle = FALSE //If we're dismantling the window properly no smashy smashy
@@ -36,6 +36,11 @@
 
 	if(start_dir)
 		setDir(start_dir)
+
+	var/static/list/connections = list(
+		COMSIG_ATOM_EXIT = .proc/on_try_exit
+	)
+	AddElement(/datum/element/connect_loc, connections)
 
 	return INITIALIZE_HINT_LATELOAD
 
@@ -73,13 +78,16 @@
 	. = ..()
 	if(CHECK_BITFIELD(mover.flags_pass, PASSGLASS))
 		return TRUE
-	if(!is_full_window() && !(get_dir(loc, target) == dir))
+	if(!is_full_window() && !(get_dir(loc, target) & dir))
 		return TRUE
 
-/obj/structure/window/CheckExit(atom/movable/mover, direction)
-	. = ..()
+/obj/structure/window/proc/on_try_exit(datum/source, atom/movable/mover, direction, list/knownblockers)
 	if(CHECK_BITFIELD(mover.flags_pass, PASSGLASS))
-		return TRUE
+		return NONE
+	if(!density || !(flags_atom & ON_BORDER) || !(direction & dir) || (mover.status_flags & INCORPOREAL))
+		return NONE
+	knownblockers += src
+	return COMPONENT_ATOM_BLOCK_EXIT
 
 /obj/structure/window/attack_hand(mob/living/user)
 	. = ..()
@@ -220,11 +228,6 @@
 		return FALSE
 
 	setDir(turn(dir, 270))
-
-/obj/structure/window/Move()
-	var/ini_dir = dir
-	. = ..()
-	setDir(ini_dir)
 
 //This proc is used to update the icons of nearby windows.
 /obj/structure/window/proc/update_nearby_icons()
